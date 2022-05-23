@@ -35,7 +35,17 @@ types:
             fourcc::sv3d: box_container
             fourcc::trak: box_container
             fourcc::uuid: uuid
-            fourcc::ytmp: ytmp 
+            fourcc::ytmp: ytmp
+            
+            # https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html
+            fourcc::hdlr: hdlr # Handler Reference
+            fourcc::mvhd: mvhd # Movie Header
+            fourcc::stco: stco # Chunk Offset Atoms
+            fourcc::stsc: stsc # Sample-to-Chunk Atoms
+            fourcc::stsz: stsz # Sample Size Atoms
+            fourcc::stts: stts # Time-to-Sample Atoms
+            fourcc::tkhd: tkhd # Track Header Atoms
+            
     -webide-representation: '{type}'
 
   box_container:
@@ -98,6 +108,172 @@ types:
         size-eos: true
         #process: zlib
 
+  hdlr:
+    seq:
+      - id: version
+        type: u1
+      - id: flags
+        size: 3
+      - id: component_type
+        type: u4
+        enum: fourcc
+      - id: component_subtype
+        type: u4
+        enum: fourcc
+      - id: component_manufactorer
+        type: u4
+      - id: component_flags
+        type: u4
+      - id: component_flags_mask
+        type: u4
+      - id: string_len
+        type: u1
+      - id: component_name
+        size: string_len
+
+  mvhd:
+    seq:
+      - id: version
+        type: u1
+      - id: flags
+        size: 3
+      - id: creation_time
+        type: u4
+      - id: modification_time
+        type: u4
+      - id: time_scale
+        type: u4
+      - id: duration
+        type: u4
+      - id: preferred_rate
+        type: u4
+      - id: preferred_volume
+        type: u2
+      - id: reserved
+        size: 10
+      - id: matrix_structure
+        type: u4
+        repeat: expr
+        repeat-expr: 9
+      - id: preview_time
+        type: u4
+      - id: preview_duration
+        type: u4
+      - id: poster_time
+        type: u4
+      - id: selection_time
+        type: u4
+      - id: selection_duration
+        type: u4
+      - id: current_time
+        type: u4
+      - id: next_track_id
+        type: u4
+  stco:
+    seq:
+      - id: version
+        type: u1
+      - id: flags
+        size: 3
+      - id: entries_num
+        type: u4
+      - id: offsets
+        type: u4
+        repeat: expr
+        repeat-expr: entries_num
+
+  stsc_entry:
+    seq:
+      - id: first_chunk
+        type: u4
+      - id: samples_per_chunk
+        type: u4
+      - id: sample_description_id
+        type: u4
+
+  stsc:
+    seq:
+      - id: version
+        type: u1
+      - id: flags
+        size: 3
+      - id: entries_num
+        type: u4
+      - id: chunks
+        type: stsc_entry
+        repeat: expr
+        repeat-expr: entries_num
+
+  stsz:
+    seq:
+      - id: version
+        type: u1
+      - id: flags
+        size: 3
+      - id: sample_size
+        type: u4
+      - id: entries_num
+        type: u4
+      - id: sizes
+        if: sample_size == 0
+        type: u4
+        repeat: expr
+        repeat-expr: entries_num
+
+  stts_entry:
+    seq:
+      - id: number_of_entries
+        type: u4
+      - id: sample_duration
+        type: u4
+
+  stts:
+    seq:
+      - id: version
+        type: u1
+      - id: flags
+        size: 3
+      - id: entries_num
+        type: u4
+      - id: time_to_sample
+        type: stts_entry
+        repeat: expr
+        repeat-expr: entries_num
+
+  tkhd:
+    seq:
+      - id: version
+        type: u1
+      - id: flags
+        size: 3
+      - id: creation_time
+        type: u4
+      - id: modification_time
+        type: u4
+      - id: track_id
+        type: u4
+      - id: reserved0
+        type: u4
+      - id: duration
+        type: u4
+      - id: reserved1
+        type: u8
+      - id: layer
+        type: u2
+      - id: alternate_group
+        type: u2
+      - id: volume
+        type: u2
+      - id: reserved2
+        type: u2
+      - id: matrix_structure
+        type: u4
+        repeat: expr
+        repeat-expr: 9
+      - id: track_width
+        type: u4
+      - id: track_height
+        type: u4
 enums:
 
   fourcc:
@@ -131,6 +307,7 @@ enums:
     0x73747473: stts
     0x73763364: sv3d
     0x73766864: svhd
+    0x74657874: text
     0x746B6864: tkhd
     0x7472616B: trak
     0x75726C20: url
