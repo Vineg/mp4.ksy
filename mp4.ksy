@@ -17,8 +17,11 @@ types:
       - id: type
         type: u4
         enum: fourcc
+      - id: extended_length
+        type: u8
+        if: length == 1
       - id: data
-        size: length - 8
+        size: '(length == 1) ? (extended_length - 16) : (length - 8)'
         type:
           switch-on: type
           cases:
@@ -27,6 +30,7 @@ types:
             fourcc::dref: dref
             fourcc::edts: box_container
             fourcc::mdia: box_container
+            fourcc::meta: box_container
             fourcc::minf: box_container
             fourcc::moov: box_container
             fourcc::proj: box_container
@@ -38,7 +42,7 @@ types:
             fourcc::ytmp: ytmp
             
             # https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap2/qtff2.html
-            fourcc::hdlr: hdlr # Handler Reference
+            # fourcc::hdlr: hdlr # Handler Reference
             fourcc::mvhd: mvhd # Movie Header
             fourcc::stco: stco # Chunk Offset Atoms
             fourcc::stsc: stsc # Sample-to-Chunk Atoms
@@ -64,8 +68,12 @@ types:
 
   stsd:
     seq:
-      - id: unknown_x0
-        type: u8
+      - id: version
+        type: u1
+      - id: flags
+        size: 3
+      - id: num_entries
+        type: u4
       - id: boxes
         type: box
         repeat: eos
@@ -120,16 +128,8 @@ types:
       - id: component_subtype
         type: u4
         enum: fourcc
-      - id: component_manufactorer
-        type: u4
-      - id: component_flags
-        type: u4
-      - id: component_flags_mask
-        type: u4
-      - id: string_len
-        type: u1
       - id: component_name
-        size: string_len
+        size-eos: true
 
   mvhd:
     seq:
@@ -289,6 +289,7 @@ enums:
     0x6D646174: mdat
     0x6D646864: mdhd
     0x6D646961: mdia
+    0x6D657461: meta
     0x6D696E66: minf
     0x6D6F6F66: moof
     0x6D6F6F76: moov
